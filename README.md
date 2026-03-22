@@ -40,7 +40,7 @@ Hands-on lab for deploying **Basic Agentic Infrastructure** using **AgentGateway
 │           │                        │
 └──────────┘                        ▼
                               api.openai.com
-                              (GPT-4.1-mini)
+                              (GPT-5-mini)
 ```
 
 ## Prerequisites
@@ -155,7 +155,7 @@ kubectl get agents,modelconfigs -n kagent
 kubectl port-forward -n default svc/agentgateway 18080:8080 &
 curl -s -X POST http://localhost:18080/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"Hello!"}]}'
+  -d '{"messages":[{"role":"user","content":"Hello!"}]}'
 
 # Access kagent UI
 kubectl port-forward -n kagent svc/kagent-ui 9090:8080 &

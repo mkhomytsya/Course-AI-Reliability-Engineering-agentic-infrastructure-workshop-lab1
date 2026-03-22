@@ -287,7 +287,7 @@ verify() {
     echo "  Test LLM via agentgateway:"
     echo "    curl -s -X POST http://localhost:18080/v1/chat/completions \\"
     echo "      -H 'Content-Type: application/json' \\"
-    echo "      -d '{\"model\":\"gpt-4.1-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'"
+    echo "      -d '{\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'"
     echo ""
 }
 
