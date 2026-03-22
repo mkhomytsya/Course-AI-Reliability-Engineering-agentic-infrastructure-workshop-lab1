@@ -138,11 +138,11 @@ deploy_gateway_resources() {
     kubectl apply -f "${K8S_DIR}/gateway.yaml"
     log "Gateway resource applied."
 
-    # Wait for gateway to be accepted
+    # Wait for gateway data plane pod to start
     sleep 5
     info "Waiting for Gateway data plane pods to start..."
     for i in $(seq 1 30); do
-        if kubectl get pods -n default -l gateway=agentgateway 2>/dev/null | grep -q "Running"; then
+        if kubectl get pods -n default 2>/dev/null | grep -E "^agentgateway-" | grep -q "Running"; then
             log "Gateway data plane pod is running."
             break
         fi
@@ -180,18 +180,25 @@ install_kagent() {
         -n "${KAGENT_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
     log "kagent OpenAI secret created."
 
-    # Install kagent via Helm
+    # Install kagent CRDs first
+    helm upgrade -i kagent-crds \
+        oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds \
+        --namespace "${KAGENT_NAMESPACE}" \
+        --wait
+    log "kagent CRDs installed."
+
+    # Install kagent via Helm (no --wait; we wait for pods explicitly below)
     helm upgrade -i kagent \
         oci://ghcr.io/kagent-dev/kagent/helm/kagent \
         --namespace "${KAGENT_NAMESPACE}" \
         --values "${K8S_DIR}/kagent-values.yaml" \
-        --wait --timeout 10m
+        --timeout 10m
     log "kagent Helm chart installed."
 
-    # Wait for kagent controller
+    # Wait for all kagent pods to be ready
     info "Waiting for kagent pods to be ready..."
     kubectl wait --for=condition=Ready pods --all \
-        -n "${KAGENT_NAMESPACE}" --timeout=300s 2>/dev/null || \
+        -n "${KAGENT_NAMESPACE}" --timeout=600s 2>/dev/null || \
         warn "Some kagent pods may still be starting. Check: kubectl get pods -n ${KAGENT_NAMESPACE}"
     log "kagent is deployed."
 }
