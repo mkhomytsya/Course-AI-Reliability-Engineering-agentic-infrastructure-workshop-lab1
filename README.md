@@ -1,6 +1,7 @@
 # Course-AI-Reliability-Engineering-agentic-infrastructure-workshop-lab1
 Hands-on labs for deploying Basic Agentic Infrastructure using AgentGateway, kagent, and Kubernetes
 
+```
 Plan: Deploy Full Agentic Infrastructure (Max Level) on k3d
 Deploy agentgateway + kagent on a k3d Kubernetes cluster using the Kubernetes Gateway API approach (max-level task). Uses OpenAI as LLM provider. All infrastructure runs locally via k3d.
 
@@ -36,3 +37,4 @@ Phase 8: End-to-End Verification (Max Task)
 Confirm full flow: Client → kagent → agentgateway (Gateway API) → OpenAI
 Test LLM completion through the gateway route via curl
 Review policies, backends in agentgateway UI
+```
