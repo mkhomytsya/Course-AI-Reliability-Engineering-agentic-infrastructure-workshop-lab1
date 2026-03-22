@@ -21,10 +21,10 @@ agents:
     enabled: true
   observability-agent:
     enabled: true
+  promql-agent:
+    enabled: true
   # Disable non-essential agents to save resources on k3d
   istio-agent:
-    enabled: false
-  promql-agent:
     enabled: false
   argo-rollouts-agent:
     enabled: false

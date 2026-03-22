@@ -33,7 +33,7 @@ Hands-on lab for deploying **Basic Agentic Infrastructure** using **AgentGateway
 │           │     │  │  ├─ kgateway-agent ─────────────────┤   │  │
 │           │     │  │  ├─ helm-agent ─────────────────────┤   │  │
 │           │     │  │  ├─ observability-agent ─────────────┤   │  │
-│           │     │  │  ├─ ModelConfig (openai-via-agw) ───┘   │  │
+│           │     │  │  ├─ ModelConfig (default-model-config)┘  │  │
 │           │     │  │  └─ Secret (kagent-openai)              │  │
 │           │     │  └────────────────────────────────────────┘  │
 │           │     └──────────────────────────────────────────────┘
@@ -67,7 +67,9 @@ read -s OPENAI_API_KEY && export OPENAI_API_KEY
 
 ```bash
 k3d cluster create agentic-lab \
-  --agents 1 --wait
+  --agents 1 \
+  --k3s-arg "--disable=servicelb@server:*" \
+  --wait
 ```
 
 ### Phase 2: Install Gateway API CRDs
@@ -159,8 +161,8 @@ kubectl port-forward -n kagent svc/kagent-ui 9090:8080 &
 # Open http://localhost:9090
 
 # Access agentgateway Admin UI
-kubectl port-forward -n default deployment/agentgateway 19000:15000 &
-# Open http://localhost:19000/ui/
+kubectl port-forward -n default deployment/agentgateway 15000:15000 &
+# Open http://localhost:15000/ui/
 ```
 
 ## Project Structure
@@ -194,6 +196,33 @@ kubectl port-forward -n default deployment/agentgateway 19000:15000 &
 ```bash
 k3d cluster delete agentic-lab
 ```
+
+## Next Steps
+
+After deployment, verify LLM access and explore the fundamental capabilities of **Backends** and **Policy**:
+
+1. **Verify LLM access** — send a test request through agentgateway:
+   ```bash
+   kubectl port-forward -n default svc/agentgateway 18080:8080 &
+   curl -s -X POST http://localhost:18080/v1/chat/completions \
+     -H "Content-Type: application/json" \
+     -d '{"messages":[{"role":"user","content":"Hello!"}]}'
+   ```
+2. **Explore Admin UI** — inspect listeners, routes, backends, and policies:
+   ```bash
+   kubectl port-forward -n default deployment/agentgateway 15000:15000 &
+   # Open http://localhost:15000/ui/
+   ```
+3. **Backends** — review `AgentgatewayBackend` resources that define upstream LLM providers:
+   ```bash
+   kubectl get agentgatewaybackend -n default -o yaml
+   ```
+4. **Policy** — explore traffic management, rate limiting, guardrails, and security policies available via agentgateway CRDs:
+   ```bash
+   kubectl get crd | grep agentgateway
+   ```
+
+Refer to the [agentgateway Kubernetes docs](https://agentgateway.dev/docs/kubernetes/latest/) for full policy and backend configuration options.
 
 ## Lab Tasks Completed
 

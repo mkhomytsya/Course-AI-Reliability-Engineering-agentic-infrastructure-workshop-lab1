@@ -69,6 +69,7 @@ create_cluster() {
     else
         k3d cluster create "${CLUSTER_NAME}" \
             --agents 1 \
+            --k3s-arg "--disable=servicelb@server:*" \
             --wait
         log "Cluster '${CLUSTER_NAME}' created."
     fi
@@ -275,11 +276,13 @@ verify() {
     echo ""
     info "=== Access Points ==="
     echo ""
-    echo "  AgentGateway (port-forward):  kubectl port-forward -n default svc/agentgateway 18080:8080"
-    echo "  kagent UI (port-forward):     kubectl port-forward -n ${KAGENT_NAMESPACE} svc/kagent-ui 9090:8080"
+    echo "  AgentGateway LLM:    kubectl port-forward -n default svc/agentgateway 18080:8080"
+    echo "  AgentGateway Admin:  kubectl port-forward -n default deployment/agentgateway 15000:15000"
+    echo "  kagent UI:           kubectl port-forward -n ${KAGENT_NAMESPACE} svc/kagent-ui 9090:8080"
     echo ""
     echo "  Then open:"
-    echo "    kagent UI:       http://localhost:9090"
+    echo "    kagent UI:              http://localhost:9090"
+    echo "    AgentGateway Admin UI:  http://localhost:15000/ui/"
     echo ""
     echo "  Test LLM via agentgateway:"
     echo "    curl -s -X POST http://localhost:18080/v1/chat/completions \\"
