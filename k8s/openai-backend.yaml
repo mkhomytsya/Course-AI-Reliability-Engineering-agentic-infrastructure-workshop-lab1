@@ -1,0 +1,14 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: openai-backend
+  namespace: default
+spec:
+  ai:
+    provider:
+      openai:
+        model: gpt-4.1-mini
+  policies:
+    auth:
+      secretRef:
+        name: openai-api-key

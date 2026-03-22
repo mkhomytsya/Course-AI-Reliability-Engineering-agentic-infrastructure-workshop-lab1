@@ -1,0 +1,9 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayParameters
+metadata:
+  name: agentgateway-params
+  namespace: default
+spec:
+  image:
+    registry: cr.agentgateway.dev
+    repository: agentgateway

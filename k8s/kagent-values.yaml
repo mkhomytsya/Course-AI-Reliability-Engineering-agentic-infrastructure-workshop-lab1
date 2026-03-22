@@ -1,0 +1,38 @@
+# kagent Helm values
+# Using OpenAI as default provider
+
+providers:
+  default: openAI
+  openAI:
+    provider: OpenAI
+    model: "gpt-4.1-mini"
+    apiKeySecretRef: kagent-openai
+    apiKeySecretKey: OPENAI_API_KEY
+
+# Enable core agents
+agents:
+  k8s-agent:
+    enabled: true
+  kgateway-agent:
+    enabled: true
+  helm-agent:
+    enabled: true
+  # Disable non-essential agents to save resources on k3d
+  istio-agent:
+    enabled: false
+  promql-agent:
+    enabled: false
+  observability-agent:
+    enabled: false
+  argo-rollouts-agent:
+    enabled: false
+  cilium-policy-agent:
+    enabled: false
+  cilium-manager-agent:
+    enabled: false
+
+# UI config
+ui:
+  replicas: 1
+  service:
+    type: ClusterIP
