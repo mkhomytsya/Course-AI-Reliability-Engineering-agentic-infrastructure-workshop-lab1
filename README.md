@@ -32,7 +32,7 @@ Hands-on lab for deploying **Basic Agentic Infrastructure** using **AgentGateway
 │           │     │  │  ├─ k8s-agent ─────────────────────┐   │  │
 │           │     │  │  ├─ kgateway-agent ─────────────────┤   │  │
 │           │     │  │  ├─ helm-agent ─────────────────────┤   │  │
-│           │     │  │  ├─ cilium-debug-agent ─────────────┤   │  │
+│           │     │  │  ├─ observability-agent ─────────────┤   │  │
 │           │     │  │  ├─ ModelConfig (openai-via-agw) ───┘   │  │
 │           │     │  │  └─ Secret (kagent-openai)              │  │
 │           │     │  └────────────────────────────────────────┘  │
@@ -131,17 +131,14 @@ helm upgrade -i kagent \
   --timeout 10m --wait
 ```
 
-### Phase 6: Configure Model Route via AgentGateway
+### Phase 6: Verify Model Route via AgentGateway
+
+The `kagent-values.yaml` configures the default provider with `config.baseUrl` pointing to the agentgateway data plane service. All agents automatically route through agentgateway — no manual patching required.
 
 ```bash
-# Create ModelConfig that routes through agentgateway
-kubectl apply -f k8s/kagent-modelconfig.yaml
-
-# Patch agents to use the agentgateway-routed model config
-for agent in k8s-agent kgateway-agent helm-agent cilium-debug-agent; do
-  kubectl patch agent "$agent" -n kagent --type=json \
-    -p '[{"op":"replace","path":"/spec/declarative/modelConfig","value":"openai-via-agentgateway"}]'
-done
+# Verify the default-model-config has the agentgateway baseUrl
+kubectl get modelconfig default-model-config -n kagent -o jsonpath='{.spec.openAI.baseUrl}'
+# Expected: http://agentgateway.default.svc.cluster.local:8080/v1
 ```
 
 ### Phase 7: Verification
@@ -175,9 +172,7 @@ kubectl port-forward -n kagent svc/kagent-ui 9090:8080 &
     ├── gateway.yaml                 # Gateway resource (K8s Gateway API)
     ├── httproute.yaml               # HTTPRoute connecting listener → backend
     ├── openai-backend.yaml          # AgentgatewayBackend for OpenAI
-    ├── openai-secret.yaml           # Secret template (API key placeholder)
-    ├── kagent-values.yaml           # Helm values for kagent
-    └── kagent-modelconfig.yaml      # ModelConfig routing through agentgateway
+    └── kagent-values.yaml           # Helm values for kagent (routes through agentgateway)
 ```
 
 ## Key Resources
@@ -187,10 +182,11 @@ kubectl port-forward -n kagent svc/kagent-ui 9090:8080 &
 | `Gateway/agentgateway` | default | K8s Gateway API listener on port 8080 |
 | `HTTPRoute/llm-route` | default | Routes all traffic to OpenAI backend |
 | `AgentgatewayBackend/openai-backend` | default | OpenAI LLM provider config |
-| `ModelConfig/openai-via-agentgateway` | kagent | Points kagent agents to agentgateway |
+| `ModelConfig/default-model-config` | kagent | Default model config routing through agentgateway |
 | `Agent/k8s-agent` | kagent | Kubernetes diagnostics agent |
 | `Agent/kgateway-agent` | kagent | Gateway management agent |
 | `Agent/helm-agent` | kagent | Helm operations agent |
+| `Agent/observability-agent` | kagent | Observability & monitoring agent |
 
 ## Cleanup
 

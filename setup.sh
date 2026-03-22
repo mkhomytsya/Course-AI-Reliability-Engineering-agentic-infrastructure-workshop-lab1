@@ -32,12 +32,19 @@ info()  { echo -e "${CYAN}[i]${NC} $*"; }
 preflight() {
     info "Running pre-flight checks..."
 
-    for cmd in docker kubectl helm k3d; do
+    for cmd in docker kubectl helm; do
         if ! command -v "$cmd" &>/dev/null; then
             err "$cmd is not installed. Please install it first."
             exit 1
         fi
     done
+
+    # Auto-install k3d if not present
+    if ! command -v k3d &>/dev/null; then
+        info "k3d not found. Installing k3d..."
+        curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+        log "k3d installed."
+    fi
 
     if [ -z "${OPENAI_API_KEY:-}" ]; then
         err "OPENAI_API_KEY environment variable is not set."
@@ -204,41 +211,39 @@ install_kagent() {
 }
 
 # -----------------------------------------------------------------------------
-# Phase 6: Configure model route via agentgateway
+# Phase 6: Verify model route via agentgateway
 # -----------------------------------------------------------------------------
-configure_model_route() {
-    info "Phase 6: Configuring kagent model route through agentgateway..."
+verify_model_route() {
+    info "Phase 6: Verifying kagent model route through agentgateway..."
 
-    # Get the agentgateway data plane service in default namespace
+    # The default-model-config created by Helm already includes
+    # openAI.baseUrl pointing to the agentgateway data plane service,
+    # so all agents route through agentgateway out of the box.
+
     local gw_svc
     gw_svc=$(kubectl get svc -n default agentgateway -o jsonpath='{.metadata.name}' 2>/dev/null || echo "")
 
     if [ -z "$gw_svc" ]; then
         warn "AgentGateway data plane service not found yet."
-        warn "You can configure the model route manually once the gateway pod is running."
+        warn "Agents won't reach LLM until the gateway pod is running."
         return
     fi
 
-    local gw_endpoint="http://${gw_svc}.default.svc.cluster.local:8080"
-    info "AgentGateway data plane endpoint: ${gw_endpoint}"
+    info "AgentGateway data plane endpoint: http://${gw_svc}.default.svc.cluster.local:8080/v1"
 
-    # Apply ModelConfig pointing kagent through agentgateway
-    kubectl apply -f "${K8S_DIR}/kagent-modelconfig.yaml"
-    log "ModelConfig 'openai-via-agentgateway' created."
+    # Confirm default-model-config has the correct baseUrl
+    local base_url
+    base_url=$(kubectl get modelconfig default-model-config -n "${KAGENT_NAMESPACE}" \
+        -o jsonpath='{.spec.openAI.baseUrl}' 2>/dev/null || echo "")
 
-    # Patch all agents to use the agentgateway-routed ModelConfig
-    for agent in $(kubectl get agents -n "${KAGENT_NAMESPACE}" -o jsonpath='{.items[*].metadata.name}'); do
-        kubectl patch agent "$agent" -n "${KAGENT_NAMESPACE}" --type=json \
-            -p '[{"op":"replace","path":"/spec/declarative/modelConfig","value":"openai-via-agentgateway"}]' 2>/dev/null || true
-    done
-    log "All agents patched to route through agentgateway."
+    if [[ "$base_url" == *"agentgateway"* ]]; then
+        log "default-model-config routes through agentgateway: ${base_url}"
+    else
+        warn "default-model-config baseUrl not set to agentgateway (got: '${base_url}')."
+        warn "Check kagent-values.yaml providers.openAI.config.baseUrl setting."
+    fi
 
-    # Wait for agent pods to restart
-    sleep 10
-    kubectl wait --for=condition=Ready pods -l app.kubernetes.io/part-of=kagent \
-        -n "${KAGENT_NAMESPACE}" --timeout=120s 2>/dev/null || true
-
-    log "Model route configuration complete."
+    log "Model route verification complete."
 }
 
 # -----------------------------------------------------------------------------
@@ -303,7 +308,7 @@ main() {
     install_agentgateway
     deploy_gateway_resources
     install_kagent
-    configure_model_route
+    verify_model_route
     verify
 }
 
