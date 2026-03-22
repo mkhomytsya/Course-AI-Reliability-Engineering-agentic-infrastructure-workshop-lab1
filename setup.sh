@@ -68,9 +68,6 @@ create_cluster() {
         kubectl config use-context "k3d-${CLUSTER_NAME}"
     else
         k3d cluster create "${CLUSTER_NAME}" \
-            --port "15000:15000@loadbalancer" \
-            --port "8080:8080@loadbalancer" \
-            --port "8088:8088@loadbalancer" \
             --agents 1 \
             --wait
         log "Cluster '${CLUSTER_NAME}' created."

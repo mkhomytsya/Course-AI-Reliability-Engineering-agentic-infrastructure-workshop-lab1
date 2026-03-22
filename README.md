@@ -67,9 +67,6 @@ read -s OPENAI_API_KEY && export OPENAI_API_KEY
 
 ```bash
 k3d cluster create agentic-lab \
-  --port "15000:15000@loadbalancer" \
-  --port "8080:8080@loadbalancer" \
-  --port "8088:8088@loadbalancer" \
   --agents 1 --wait
 ```
 
@@ -160,6 +157,10 @@ curl -s -X POST http://localhost:18080/v1/chat/completions \
 # Access kagent UI
 kubectl port-forward -n kagent svc/kagent-ui 9090:8080 &
 # Open http://localhost:9090
+
+# Access agentgateway Admin UI
+kubectl port-forward -n default deployment/agentgateway 19000:15000 &
+# Open http://localhost:19000/ui/
 ```
 
 ## Project Structure
